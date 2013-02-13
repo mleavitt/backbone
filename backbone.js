@@ -1,4 +1,5 @@
 //     Backbone.js 0.9.10 (modified to add AMD registration)
+//     Backbone.js 0.9.10 (modified to be compatible with jQuery 1.4.2+)
 
 //     (c) 2010-2012 Jeremy Ashkenas, DocumentCloud Inc.
 //     Backbone may be freely distributed under the MIT license.
@@ -41,6 +42,14 @@
 
   // For Backbone's purposes, jQuery, Zepto, or Ender owns the `$` variable.
   Backbone.$ = $;
+
+  // NOTE: Backbone 0.9.10 is no longer compatible with jQuery < 1.7.0
+  // To know if we need to shim the incompatibilities we test the version
+  // @author micheall <micheal.leavitt@popagency.com>
+  Backbone.compatMode = function() {
+    var $version = $().jquery.split('.');
+    return $version[0] < 2 && $version[1] < 7; 
+  }
 
   // Runs Backbone.js in *noConflict* mode, returning the `Backbone` variable
   // to its previous owner. Returns a reference to this Backbone object.
@@ -1096,9 +1105,15 @@
       // Depending on whether we're using pushState or hashes, and whether
       // 'onhashchange' is supported, determine how we check the URL state.
       if (this._hasPushState) {
-        Backbone.$(window).on('popstate', this.checkUrl);
+        // NOTE: modified for jQuery < 1.7.0 compatibility
+        // @author micheall <micheal.leavitt@popagency.com>
+        Backbone.compatMode ? Backbone.$(window).bind('popstate', this.checkUrl) : 
+                              Backbone.$(window).on('popstate', this.checkUrl);
       } else if (this._wantsHashChange && ('onhashchange' in window) && !oldIE) {
-        Backbone.$(window).on('hashchange', this.checkUrl);
+        // NOTE: modified for jQuery < 1.7.0 compatibility
+        // @author micheall <micheal.leavitt@popagency.com>
+        Backbone.compatMode ? Backbone.$(window).bind('hashchange', this.checkUrl) :
+                              Backbone.$(window).on('hashchange', this.checkUrl);
       } else if (this._wantsHashChange) {
         this._checkUrlInterval = setInterval(this.checkUrl, this.interval);
       }
@@ -1130,7 +1145,8 @@
     // Disable Backbone.history, perhaps temporarily. Not useful in a real app,
     // but possibly useful for unit testing Routers.
     stop: function() {
-      Backbone.$(window).off('popstate', this.checkUrl).off('hashchange', this.checkUrl);
+      Backbone.compatMode ? Backbone.$(window).unbind('popstate', this.checkUrl).unbind('hashchange', this.checkUrl) : 
+                            Backbone.$(window).off('popstate', this.checkUrl).off('hashchange', this.checkUrl);
       clearInterval(this._checkUrlInterval);
       History.started = false;
     },
@@ -1310,9 +1326,15 @@
         method = _.bind(method, this);
         eventName += '.delegateEvents' + this.cid;
         if (selector === '') {
-          this.$el.on(eventName, method);
+          // NOTE: modified for jQuery < 1.7.0 compatibility
+          // @author micheall <micheal.leavitt@popagency.com>
+          Backbone.compatMode ? this.$el.bind(eventName, method) :
+                                this.$el.on(eventName, method);
         } else {
-          this.$el.on(eventName, selector, method);
+          // NOTE: modified for jQuery < 1.7.0 compatibility
+          // @author micheall <micheal.leavitt@popagency.com>
+          Backbone.compatMode ? this.$el.delegate(selector, eventName, method) :
+                                this.$el.on(eventName, selector, method);
         }
       }
     },
@@ -1321,7 +1343,10 @@
     // You usually don't need to use this, but may wish to if you have multiple
     // Backbone views attached to the same DOM element.
     undelegateEvents: function() {
-      this.$el.off('.delegateEvents' + this.cid);
+      // NOTE: modified for jQuery < 1.7.0 compatibility
+      // @author micheall <micheal.leavitt@popagency.com>
+      Backbone.compatMode ? this.$el.unbind('.delegateEvents' + this.cid) :
+                            this.$el.off('.delegateEvents' + this.cid);
     },
 
     // Performs the initial configuration of a View with a set of options.
